@@ -1,0 +1,6 @@
+---
+en:
+  decidim:
+    components:
+      goteborg_login:
+        name: GoteborgLogin
