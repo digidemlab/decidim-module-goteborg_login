@@ -8,9 +8,6 @@ module Decidim
     
     # This is the engine that runs on the public interface of goteborg_login.
     class Engine < ::Rails::Engine
-      def dev_log(s) 
-          Decidim::GoteborgLogin::Dbg.dev_log "## lib/decidim/goteborg_login/engine.rb : #{s}"
-      end
 
       isolate_namespace Decidim::GoteborgLogin
 
@@ -156,7 +153,6 @@ module Decidim
         # Configure the SAML OmniAuth strategy for Devise
         
         if Decidim::GoteborgLogin::Gbgpub.configured? 
-          dev_log "initializer : 10.1 : Devise setup gbgpub"
           ::Devise.setup do |config|
             config.omniauth(
               :gbgpub,
@@ -166,7 +162,6 @@ module Decidim
         end
 
         if Decidim::GoteborgLogin::Gbgip.configured? 
-          dev_log "initializer : 10.2 : Devise setup gbgip"
           ::Devise.setup do |config|
             config.omniauth(
               :gbgip,
@@ -178,7 +173,6 @@ module Decidim
 
         if Decidim::GoteborgLogin::Localidp.configured? 
           ::Devise.setup do |config|
-            dev_log "initializer : 10.3 : Devise setup localidp"
             config.omniauth(
               :localidp,
               Decidim::GoteborgLogin::Localidp.omniauth_settings
@@ -186,7 +180,6 @@ module Decidim
           end
         end
 
-        dev_log "initializer : setup: 20 :"
 
         # Customized version of Devise's OmniAuth failure app in order to handle
         # the failures properly. Without this, the failure requests would end

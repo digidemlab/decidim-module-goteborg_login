@@ -1,14 +1,11 @@
 module Decidim
-  # This namespace holds the logic of the `GoteborgLogin` component. This component
-  # allows users to create goteborg_login in a participatory space.
   module GoteborgLogin
     module Gbgip
       include ActiveSupport::Configurable
 
       @configured = false
 
-      # :production - For Suomi.fi production environment
-      # :test - For Suomi.fi test environment
+      # :production, :development, :test
       config_accessor :mode, instance_reader: false
 
       # :limited - Limited scope
@@ -21,31 +18,16 @@ module Decidim
       config_accessor :sp_entity_id, instance_reader: false
 
       # The certificate string for the application
-      # config_accessor :certificate, instance_reader: false
+      config_accessor :certificate, instance_reader: false
 
       # The private key string for the application
-      # config_accessor :private_key, instance_reader: false
+      config_accessor :private_key, instance_reader: false
 
       # The certificate file for the application
-      #config_accessor :certificate_file
+      config_accessor :certificate_file
 
       # The private key file for the application
-      #config_accessor :private_key_file
-
-      # Defines how the session gets cleared when the OmniAuth strategy logs the
-      # user out. This has been customized to preserve the flash messages in the
-      # session after the session is destroyed.
-      config_accessor :idp_slo_session_destroy do
-          proc do |_env, session|
-            flash = session["flash"]
-            redirect_url = session["saml_redirect_url"]
-            result = session.clear
-            session["flash"] = flash if flash
-            session["saml_redirect_url"] = redirect_url if redirect_url
-            result
-          end
-      end
-
+      config_accessor :private_key_file
 
 
       def self.configured?
@@ -95,6 +77,24 @@ module Decidim
           result
         end
       end
+
+      def self.certificate
+        if certificate_file
+          return File.read(certificate_file) if File.exist?(certificate_file)
+          raise "Gbgip certificate_file '#{certificate_file}' doesn't exist!"
+        else
+          raise "Missing Gbgip certificate_file configuration!"
+        end
+      end
+
+      def self.private_key
+        if private_key_file
+          return File.read(private_key_file) if File.exist?(private_key_file)
+          raise "Gbgip private_key_file '#{certificate_file}' doesn't exist!"
+        else
+          raise "Missing Gbgip private_key_file configuration!"
+        end
+       end
 
       def self.omniauth_settings
         settings = {

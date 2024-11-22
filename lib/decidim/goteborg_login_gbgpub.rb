@@ -18,18 +18,16 @@ module Decidim
       config_accessor :sp_entity_id, instance_reader: false
 
       # The certificate string for the application
-      # config_accessor :certificate, instance_reader: false
+      config_accessor :certificate, instance_reader: false
 
       # The private key string for the application
-      # config_accessor :private_key, instance_reader: false
+      config_accessor :private_key, instance_reader: false
 
       # The certificate file for the application
-      #config_accessor :certificate_file
+      config_accessor :certificate_file
 
       # The private key file for the application
-      #config_accessor :private_key_file
-
-
+      config_accessor :private_key_file
 
 
       def self.configured?
@@ -79,6 +77,24 @@ module Decidim
           result
         end
       end
+
+      def self.certificate
+        if certificate_file
+          return File.read(certificate_file) if File.exist?(certificate_file)
+          raise "Gbgpub certificate_file '#{certificate_file}' doesn't exist!"
+        else
+          raise "Missing Gbgpub certificate_file configuration!"
+        end
+      end
+
+      def self.private_key
+        if private_key_file
+          return File.read(private_key_file) if File.exist?(private_key_file)
+          raise "Gbgpub private_key_file '#{certificate_file}' doesn't exist!"
+        else
+          raise "Missing Gbgpub private_key_file configuration!"
+        end
+       end
 
       def self.omniauth_settings
         settings = {
