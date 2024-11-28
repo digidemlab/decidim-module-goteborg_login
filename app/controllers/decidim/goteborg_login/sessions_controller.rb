@@ -3,20 +3,19 @@
 module Decidim
   module GoteborgLogin 
     class SessionsController < ::Decidim::Devise::SessionsController
-      def dev_log(s)
-        Decidim::GoteborgLogin::Dbg.dev_log "---- GoteborgLogin:.SessionsController : #{s}"
-      end
 
       def destroy
-        dev_log "destroy : 00 : session.keys=#{session.keys}"
-        
-        gbg_idp = session["decidim-goteborg_login.gbg_idp"].to_sym
-        dev_log "destroy : 01 : sesssion idp = #{gbg_idp} : #{gbg_idp == :localidp} : "
+        gbg_idp_session = session["decidim-goteborg_login.gbg_idp"]
 
-        # In case the user is signed in through Suomi.fi, redirect them through
+        if gbg_idp_session 
+          gbg_idp = gbg_idp_session.to_sym
+        else
+          gbg_idp = nil
+        end
+
+        # In case the user is signed in through gbg idp, redirect them through
         # the SPSLO flow.
         if session.delete("decidim-goteborg_login.signed_in")
-          dev_log "destroy : 10 : "
           
           # These session variables get destroyed along with the user's active
           # session. They are needed for the SLO request.
@@ -31,13 +30,9 @@ module Decidim
           # need to sign out the user again (the request would fail).
           goteborg_session = Decidim::GoteborgLogin::Session.find_by(saml_uid:, saml_session_index:)
           
-          dev_log "destroy : 20 : goteborg_session=#{goteborg_session}"
-          
           session_ended = goteborg_session&.ended?
           goteborg_session&.destroy!
           
-          
-          dev_log "destroy : 25 : session_ended=#{session_ended} : slo_callba_user_session_path=#{slo_callback_user_session_path(success: "1")}"
           return redirect_to(slo_callback_user_session_path(success: "1")) if session_ended
 
           # Store the SAML parameters for the SLO request utilized by
@@ -51,9 +46,6 @@ module Decidim
           relay += "?success=1" if signed_out
           params = "?RelayState=#{CGI.escape(relay)}"
 
-          dev_log "destroy : 40 : sesssion idp = #{session["decidim-goteborg_login.gbg_idp"]}"
-          dev_log "destroy : 41 : gbg_idp=#{gbg_idp}"
-
           if gbg_idp == :gbgpub 
             spslo_url = user_gbgpub_omniauth_spslo_path + params
           elsif gbg_idp == :gbgip 
@@ -62,11 +54,8 @@ module Decidim
             spslo_url = user_localidp_omniauth_spslo_path + params
           end
 
-          dev_log "destroy : 90 : spslo_url=#{spslo_url}"
           return redirect_to spslo_url
         end
-
-        dev_log "destroy : 50 : "
 
         # Otherwise, continue normally
         super
@@ -96,13 +85,10 @@ module Decidim
       # logged out through a database value. The `omniauth-suomifi` passes this
       # request to the application because of this reason.
       def slo
-        dev_log "slo : 00 : "
-
         # The the logout request and response are created by the
         # `gbg*_strategy` strategies.
         logout_request = request.env["omniauth.saml_request"]
 
-        dev_log "slo : 10 : logout_request=#{logout_request}"
         return redirect_to(decidim.root_path) unless logout_request
 
         goteborg_session = Decidim::GoteborgLogin::Session.find_by(saml_uid: logout_request.name_id)
@@ -112,8 +98,6 @@ module Decidim
 
         logout_response = request.env["omniauth.saml_response"]
 
-        dev_log "slo : 98 : logout_response=#{logout_response}"
-        
         redirect_to logout_response
       end
 
