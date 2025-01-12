@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'personnummer'
+
 module Decidim
   module GoteborgLogin 
     module Authentication
@@ -28,16 +30,9 @@ module Decidim
         # Private: Create form params from omniauth hash
         # Since we are using trusted omniauth data we are generating a valid signature.
         def user_params_from_oauth_hash
-          dev_log "user_params_from_oauth_hash : 00 : oauth_data=#{oauth_data}"
-          dev_log "user_params_from_oauth_hash : 01 : user_identifier=#{user_identifier}"
-
-          
           return nil if oauth_data.empty?
-          # return nil if saml_attributes.empty?
           return nil if user_identifier.blank?
 
-          dev_log "user_params_from_oauth_hash : 10 : oauth_data=#{oauth_data}"
-          
           params = {
             provider: oauth_data[:provider],
             uid: user_identifier,
@@ -50,7 +45,6 @@ module Decidim
             raw_data: oauth_hash
           }
          
-          dev_log "user_params_from_oauth_hash : 90 : params=..."
           params
         end
 
@@ -63,20 +57,16 @@ module Decidim
           # Use this when testing the validation error path in omniauth_callbacks_controller.rb
           # raise ValidationError, "FOO Verifying validation error path" 
 
-          # FIXME: Check for person identifier if it's a :gbgpub session
-          #raise ValidationError, "Invalid person dentifier" if person_identifier_digest.blank?
-
           true
         end
 
         def identify_user!(user)
-          dev_log "identify_user : 00 : user=#{user}"
-
           identity = user.identities.find_by(
             organization:,
             provider: oauth_data[:provider],
             uid: user_identifier
           )
+
           return identity if identity
 
           # Check that the identity is not already bound to another user.
@@ -86,10 +76,7 @@ module Decidim
             uid: user_identifier
           )
 
-          dev_log "identify_user : 50 : id=#{id}"
           raise IdentityBoundToOtherUserError if id
-
-          dev_log "identify_user : 60 : uid=#{uid}"
 
           user.identities.create!(
             organization:,
@@ -99,34 +86,22 @@ module Decidim
         end
 
         def authorize_user!(user)
-          dev_log "authorize_user! : 00 : ################### !! ### : user=#{user}"
-
           authorization = Decidim::Authorization.find_by(
             name: "gbglogin_eid",
             unique_id: user_signature
           )
-
           
-          dev_log "authorize_user! : 10 : authorization=#{authorization}"
-           
           if authorization
-            dev_log "authorize_user! : 11 : authorization.user == user #{authorization.user == user}"
             raise AuthorizationBoundToOtherUserError if authorization.user != user
           else
-            dev_log "authorize_user! : 12 : No authorization found!"
             authorization = Decidim::Authorization.find_or_initialize_by(
               name: "gbglogin_eid",
               user:
             )
           end
-          dev_log "authorize_user! : 49 : authorization=#{authorization.attribute_names}"
 
-          dev_log "authorize_user! : 50 : person_identifier_digest=#{person_identifier_digest} : ..blank?=#{authorization.pseudonymized_pin.blank?}"
-          
           authorization.pseudonymized_pin = person_identifier_digest if authorization.pseudonymized_pin.blank?
           
-          dev_log "authorize_user! : 51 : authorization.pserudoni... = #{authorization.pseudonymized_pin}"
-
           authorization.attributes = {
             unique_id: user_signature,
             metadata: authorization_metadata
@@ -163,6 +138,22 @@ module Decidim
         # - The SAML NameID in the SAML response in case no unique personal data
         #   is available as defined above
         def user_identifier
+          if !@user_identifier 
+            uid = oauth_data[:uid]
+           
+            p = Personnummer.new(uid)
+
+            if p.valid? 
+              hashed_uid = Digest::SHA256.hexdigest(
+                ":#{uid}:#{Rails.application.secrets.secret_key_base}"
+              )
+            
+              return hashed_uid
+            else
+              return uid
+            end
+          end
+
           @user_identifier ||= oauth_data[:uid]
         end
 

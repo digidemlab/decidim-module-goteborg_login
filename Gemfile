@@ -9,6 +9,7 @@ gem "decidim-goteborg_login", path: "."
 
 gem "puma", ">= 4.3"
 gem "bootsnap", "~> 1.4"
+gem 'personnummer', '~> 0.1.0'
 
 group :development, :test do
   gem "byebug", "~> 11.0", platform: :mri

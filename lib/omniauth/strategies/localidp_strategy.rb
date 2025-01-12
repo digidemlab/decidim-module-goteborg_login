@@ -23,7 +23,6 @@ module OmniAuth
       # rubocop:disable Metrics/MethodLength
       def initialize(app, *args, &block)
         super
-        dev_log "initialize : 10 :"
 
         options[:sp_name_qualifier] = options[:sp_entity_id] if options[:sp_name_qualifier].nil?
 
@@ -54,22 +53,14 @@ module OmniAuth
       # the redirect URL. Note that this needs to be the last parameter to
       # be passed to the redirect URL.
       def request_phase
-        dev_log "request_phase : 00 :"
         localidp_thread.join if localidp_thread.alive?
-        dev_log "request_phase : 10 :"
 
         authn_request = OneLogin::RubySaml::Authrequest.new
 
-        dev_log "request_phase : 20 :"
         session['saml_redirect_url'] = request.params['redirect_url']
-        dev_log "request_phase : 30 : session=#{session}"
 
         with_settings do |settings|
-          dev_log "request_phase : 35 :"
-
           url = authn_request.create(settings, additional_params_for_authn_request)
-
-          dev_log "request_phase : 40 : url='#{url}'"
 
           redirect(url)
         end
@@ -131,8 +122,6 @@ module OmniAuth
 
       # rubocop:disable Metrics/MethodLength
       def localidp_options
-        dev_log "localidp_options : 00 : idp_metadata={idp_metadata}"
-
         idp_metadata_parser = OneLogin::RubySaml::IdpMetadataParser.new
 
         # Returns OneLogin::RubySaml::Settings prepopulated with idp metadata

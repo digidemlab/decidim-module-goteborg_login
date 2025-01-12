@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'omniauth-saml', '~> 2.1'
   s.add_dependency 'ruby-saml', '~> 1.17'
+  s.add_dependency 'personnummer', '~> 0.1.0'
 
   # Basic development dependencies
   s.add_development_dependency 'rake', '~> 13.1'

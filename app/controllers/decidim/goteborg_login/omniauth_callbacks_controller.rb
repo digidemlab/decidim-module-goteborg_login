@@ -16,22 +16,18 @@ module Decidim
       skip_after_action :verify_same_origin_request, only: [:goteborg_login, :failure]
 
       def gbgpub
-        dev_log "gbgpub : 00 : "
         gbg_post_idp_auth :gbgpub
       end
 
       def gbgip 
-        dev_log "gpgip : 00 : "
         gbg_post_idp_auth :gbgip 
       end
 
       def localidp 
-        dev_log "localidp : 00 : "
         gbg_post_idp_auth :localidp
       end
 
       def gbg_post_idp_auth(gbg_idp)
-        dev_log("gbg_post_idp_auth : 00 : gbg_idp=#{gbg_idp}")
 
         session["decidim-goteborg_login.signed_in"] = true
         session["decidim-goteborg_login.gbg_idp"] = gbg_idp
@@ -40,14 +36,9 @@ module Decidim
           store_location_for(:user, redirect_path)
         end
 
-        dev_log("gbg_post_idp_auth : 10 : gbg_idp=#{gbg_idp} : session.keys=#{session.keys}")
-
         authenticator.validate!
 
-        dev_log("gbg_post_idp_auth : 11 : gbg_idp=#{gbg_idp} : user_signed_in?=#{user_signed_in?}")
-
         if user_signed_in?
-          dev_log("gbg_post_idp_auth : 20 : gbg_idp=#{gbg_idp} : User signed in")
           
           # The user is most likely returning from an authorization request
           # because they are already signed in. In this case, add the
@@ -82,8 +73,6 @@ module Decidim
           )
         end
 
-        dev_log("gbg_post_idp_auth : 90 : gbg_idp=#{gbg_idp} : session.keys=#{session.keys}")
-
         # Normal authentication request, proceed with Decidim's internal logic.
         send(:create)
       rescue Decidim::GoteborgLogin::Authentication::ValidationError => e
@@ -94,23 +83,17 @@ module Decidim
 
       # Overridden so that we can store the
       def sign_in(resource_or_scope, *args)
-        dev_log "sign_in : 00 : "
         super
 
-        dev_log "sign_in : 10 : "
         # Check that this is coming from the Decidim authentication
         options = args.extract_options!
         return unless options
-        dev_log "sign_in : 20 : "
         return if options[:event] != :authentication
 
-        dev_log "sign_in : 30 : "
         create_goteborg_login_session!
       end
 
       def failure
-        dev_log "failure : 00 : "
-
         strategy = failed_strategy
         saml_response = strategy.response_object if strategy
         return super unless saml_response
@@ -172,8 +155,6 @@ module Decidim
       # because a succesful Suomi.fi authentication means the user has been
       # successfully authorized as well.
       def sign_in_and_redirect(resource_or_scope, *args)
-        dev_log "sign_in_and_redirect : 00 :"
-        
         # Add authorization for the user
         if resource_or_scope.is_a?(::Decidim::User)
           result = authorize_user(resource_or_scope)
@@ -185,14 +166,12 @@ module Decidim
 
       # Disable authorization redirect for the first login
       def first_login_and_not_authorized?(_user)
-        dev_log "first_login_and_not_authorized : 00 : false"
         false
       end
 
       private
 
       def authorize_user(user)
-        dev_log "authorize_user : 00 : "
         authenticator.authorize_user!(user)
       rescue Decidim::GoteborgLogin::Authentication::AuthorizationBoundToOtherUserError
         nil
