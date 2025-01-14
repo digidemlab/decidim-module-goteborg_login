@@ -140,16 +140,20 @@ module Decidim
         def user_identifier
           if !@user_identifier 
             uid = oauth_data[:uid]
-           
-            p = Personnummer.new(uid)
+          
+            begin
+              p = Personnummer.new(uid)
 
-            if p.valid? 
-              hashed_uid = Digest::SHA256.hexdigest(
-                ":#{uid}:#{Rails.application.secrets.secret_key_base}"
-              )
-            
-              return hashed_uid
-            else
+              if p.valid? 
+                hashed_uid = Digest::SHA256.hexdigest(
+                  ":#{uid}:#{Rails.application.secrets.secret_key_base}"
+                )
+              
+                return hashed_uid
+              else
+                return uid
+              end
+            rescue ArgumentError
               return uid
             end
           end
